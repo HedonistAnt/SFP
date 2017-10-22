@@ -3,4 +3,4 @@
 
 
 .. math::
-   \frac{I_min + Imax}{2}
+     \frac{I_min + Imax}{2}
