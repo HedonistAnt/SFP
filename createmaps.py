@@ -1,51 +1,73 @@
 from PIL import Image
 import solvingsystem
-import math
+import matplotlib.pyplot as plt
 import numpy as np
-import sympy
+from sympy import *
+import math
+import cv2
+from mpmath.calculus.optimization import Newton
 
-def minimize(f,df,rho):
-    dim = 1.
-    dimp=100000
-    while abs(dimp-dim)>0.001:
-        dim = dim - float(f(dim,rho))/float(df(dim))
-        dimp=dim
 
-    return dim
+def minimize(f, df, r):
+    x0 = 1
+    for i in range (20):
+        f_new = f(x0) - r
+
+        x1 = x0 - f_new / df(x0)
+        if abs(x1 - x0) < 0.001:
+            return x1
+        x0 = x1
+    return 0
+
 
 def main():
-    img0=Image.open(".\\photo\\IMG0.png").convert('L')
-    img45=Image.open(".\\photo\\IMG45.png").convert('L')
-    img90=Image.open(".\\photo\\IMG90.png").convert('L')
+    phi = symbols('phi')
 
-    width,height=img0.size
 
-    map = Image.new("L", (width,height), (0))
+    img0 = cv2.imread(".\\photo\\IMG0.png", cv2.IMREAD_GRAYSCALE)
+    img0 = np.array(img0)
 
-    Phi= np.zeros((width,height))
-    Rho=np.zeros((width,height))
-    Theta = np.zeros((width,height))
-    n = 0.1
-    theta=sympy.symbols("theta")
-    rho=sympy.symbols("rho")
-    f = 2*n*sympy.tan(theta)*sympy.sin(theta)/((sympy.tan(theta))**2*(sympy.sin(theta))**2 + n**2) - rho
-    print(f)
-    df=sympy.diff(f,theta)
-    df=sympy.lambdify(theta,df)
-    f=sympy.lambdify((theta,rho),f)
+    img45 = cv2.imread(".\\photo\\IMG45.png", cv2.IMREAD_GRAYSCALE)
+    img45 = np.array(img45)
 
-    for x in range(width):
-        for y in range(height):
-          Imax,Imin,Phi[x,y]=solvingsystem.solve_system([img0.getpixel((x,y)),img45.getpixel((x,y)),img90.getpixel((x,y))])
-          Rho=(Imax-Imin)/(Imax+Imin)
-          Theta[x,y]=minimize(f,df,Rho)
-          map.putpixel((x,y),abs(math.floor(255*Theta[x,y]/2)))
-          map.save(".\\maps\\thetamap.png", "PNG")
-          print(abs(math.floor(255*Theta[x,y]/2)))
-    map.save(".\\maps\\thetamap.png", "PNG")
+    img90 = cv2.imread(".\\photo\\IMG90.png", cv2.IMREAD_GRAYSCALE)
+    img90 = np.array(img90)
 
-if __name__=="__main__":
+    height, width = img0.shape
+    map = np.zeros([height, width, 3], dtype=np.uint8)
+    map = cv2.cvtColor(map, cv2.COLOR_RGB2GRAY)
+    map = np.array(map)
+
+    Theta = np.zeros((height, width))
+
+    n = 1.6
 
 
 
+    df = lambda theta: 4 * n ** 2 * (n ** 2 - 1) ** 2 * (
+    n ** 2 * sqrt(n ** 2 - math.sin(theta) ** 2) * math.cos(theta) - n ** 2 * math.sin(theta) ** 2 + 2 * n ** 2 + sqrt(
+        n ** 2 - math.sin(theta) ** 2) * math.cos(theta) - math.sin(theta) ** 2) * math.sin(theta) / (
+                       sqrt(n ** 2 - math.sin(theta) ** 2) * (
+                       2 * n ** 2 * (n ** 2 + 2 * sqrt(n ** 2 - math.sin(theta) ** 2) * math.cos(theta) + 1) - (
+                       n ** 2 + 1) ** 2 * math.sin(theta) ** 2) ** 2)
+
+    f = lambda theta: (n - 1 / n) ** 2 * (math.sin(theta)) ** 2 / (
+        2 + 2 * n ** 2 - (n + 1 / n) ** 2 * (math.sin(theta)) ** 2 + 4 * math.cos(theta) * sqrt(
+            n ** 2 - (math.sin(theta)) ** 2))
+
+    for x in range(height):
+        for y in range(width):
+            Imax, Imin, Phi = solvingsystem.solve_system([img0.item((x, y)), img45.item((x, y)), img90.item((x, y))])
+
+            Rho = (Imax - Imin) / (Imax + Imin)
+            print(Rho)
+            Theta[x, y] = minimize(f, df, Rho)
+            map[x, y] = abs(math.floor(255 * Theta.item((x, y))/2))
+
+    map = np.asarray(map)
+
+    cv2.imwrite(".\\maps\\thetamap.png", map)
+
+
+if __name__ == "__main__":
     main()
