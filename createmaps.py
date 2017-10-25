@@ -1,36 +1,28 @@
-from PIL import Image
+
 import solvingsystem
-import matplotlib.pyplot as plt
+
 import numpy as np
-from sympy import *
-import math
+
+
+from math import sin,cos,sqrt,floor,asin,pi
 import cv2
-from mpmath.calculus.optimization import Newton
+from scipy.optimize import minimize_scalar,minimize
 
 
-def minimize(f, df, r):
-    x0 = 1
-    for i in range (20):
-        f_new = f(x0) - r
 
-        x1 = x0 - f_new / df(x0)
-        if abs(x1 - x0) < 0.001:
-            return x1
-        x0 = x1
-    return 0
 
 
 def main():
-    phi = symbols('phi')
 
 
-    img0 = cv2.imread(".\\photo\\IMG0.png", cv2.IMREAD_GRAYSCALE)
+
+    img0 = cv2.imread("./photo/IMG0.png", cv2.IMREAD_GRAYSCALE)
     img0 = np.array(img0)
 
-    img45 = cv2.imread(".\\photo\\IMG45.png", cv2.IMREAD_GRAYSCALE)
+    img45 = cv2.imread("./photo/IMG45.png", cv2.IMREAD_GRAYSCALE)
     img45 = np.array(img45)
 
-    img90 = cv2.imread(".\\photo\\IMG90.png", cv2.IMREAD_GRAYSCALE)
+    img90 = cv2.imread("./photo/IMG90.png", cv2.IMREAD_GRAYSCALE)
     img90 = np.array(img90)
 
     height, width = img0.shape
@@ -38,36 +30,54 @@ def main():
     map = cv2.cvtColor(map, cv2.COLOR_RGB2GRAY)
     map = np.array(map)
 
-    Theta = np.zeros((height, width))
+    cmap = np.zeros([height, width, 3], dtype=np.uint8)
+    cmap = cv2.cvtColor(cmap, cv2.COLOR_RGB2GRAY)
+    cmap = np.array(cmap)
+    n = 1.4
 
-    n = 1.6
+    maxrho=0
 
 
-
-    df = lambda theta: 4 * n ** 2 * (n ** 2 - 1) ** 2 * (
-    n ** 2 * sqrt(n ** 2 - math.sin(theta) ** 2) * math.cos(theta) - n ** 2 * math.sin(theta) ** 2 + 2 * n ** 2 + sqrt(
-        n ** 2 - math.sin(theta) ** 2) * math.cos(theta) - math.sin(theta) ** 2) * math.sin(theta) / (
-                       sqrt(n ** 2 - math.sin(theta) ** 2) * (
-                       2 * n ** 2 * (n ** 2 + 2 * sqrt(n ** 2 - math.sin(theta) ** 2) * math.cos(theta) + 1) - (
-                       n ** 2 + 1) ** 2 * math.sin(theta) ** 2) ** 2)
-
-    f = lambda theta: (n - 1 / n) ** 2 * (math.sin(theta)) ** 2 / (
-        2 + 2 * n ** 2 - (n + 1 / n) ** 2 * (math.sin(theta)) ** 2 + 4 * math.cos(theta) * sqrt(
-            n ** 2 - (math.sin(theta)) ** 2))
 
     for x in range(height):
         for y in range(width):
             Imax, Imin, Phi = solvingsystem.solve_system([img0.item((x, y)), img45.item((x, y)), img90.item((x, y))])
 
             Rho = (Imax - Imin) / (Imax + Imin)
-            print(Rho)
-            Theta[x, y] = minimize(f, df, Rho)
-            map[x, y] = abs(math.floor(255 * Theta.item((x, y))/2))
+
+
+
+            print(Phi)
+
+            aa = (n - 1 / n)** 2 + Rho * (n + 1/ n) **2
+            bb = 4 * Rho * (n ** 2 + 1) * (aa - 4 * Rho)
+            cc = bb ** 2 + 16 * (Rho) ** 2 * (16 * (Rho) ** 2 - aa **2) * (n **2 - 1) **2
+            dd = ((-bb - cc **(1 / 2)) / (2 * (16 * (Rho) **2 - aa **2))) **(1 / 2)
+            try:
+                theta = asin(dd)
+
+            except:
+                cmap[x,y]=255
+                theta=0
+
+            while(theta<0.0):
+                theta += 2*pi
+                print("lol")
+
+            while(theta>2.):
+                theta-=2*pi
+
+
+            theta/=2
+
+
+            map[x, y] = abs(floor(255 * theta))
+
 
     map = np.asarray(map)
-
-    cv2.imwrite(".\\maps\\thetamap.png", map)
-
+    cmap=np.asarray(cmap)
+    cv2.imwrite("./maps/thetamap.png", map)
+    cv2.imwrite("./maps/cmap.png",cmap)
 
 if __name__ == "__main__":
     main()
