@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
-from math import sin,cos,sqrt,asin,pi
-from numpy import arange,vectorize
-from scipy.optimize import brenth,minimize_scalar
+from math import sin,cos,sqrt,asin
+from numpy import arange
+
 
 def aproximate_theta(Rho):
     n=2

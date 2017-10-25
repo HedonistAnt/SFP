@@ -47,7 +47,6 @@ def main():
 
 
 
-            print(Phi)
 
             aa = (n - 1 / n)** 2 + Rho * (n + 1/ n) **2
             bb = 4 * Rho * (n ** 2 + 1) * (aa - 4 * Rho)
@@ -66,7 +65,7 @@ def main():
 
             while(theta>2.):
                 theta-=2*pi
-
+            print("theta=",theta)
 
             theta/=2
 

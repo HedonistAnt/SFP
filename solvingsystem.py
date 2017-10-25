@@ -10,11 +10,7 @@ def solve_system(I):
         phi_value = tan(0.5 * (i1 - i3 + sqrt((i3 - i1) ** 2 + 4)))
 
 
-    while(phi_value>pi):
-        phi_value-=pi
 
-    while (phi_value < 0.0):
-        phi_value += pi
 
     imin_value = ((i1 + i3) * (1 + sin(2 * phi_value)) - 2 * i2) / (2 * sin(2 * phi_value))
     imax_value = i1 + i3 - ((i1 + i3) * (1 + sin(2 * phi_value)) - 2 * i2) / (2 * sin(2 * phi_value))
