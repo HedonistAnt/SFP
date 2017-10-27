@@ -2,11 +2,26 @@
 import solvingsystem
 
 import numpy as np
-
+import matplotlib.pyplot as plt
 
 from math import sin,cos,sqrt,floor,asin,pi
 import cv2
-from scipy.optimize import minimize_scalar,minimize
+from scipy.optimize import minimize_scalar,minimize,bisect
+
+def findtheta (rho,n,Imax,Imin,i1,i2,i3):
+    if rho<0:
+        return -2
+    f_rho = lambda theta: ((n - 1 / n) ** 2) * ((sin(theta)) ** 2) / (
+        2 + 2 * (n ** 2) - ((n + 1 / n) ** 2) * (sin(theta)) ** 2 + 4 * cos(theta) * sqrt(
+            n ** 2 - (sin(theta)) ** 2))-rho
+    nf_rho = lambda theta: -(((n - 1 / n) ** 2) * ((sin(theta)) ** 2) / (
+        2 + 2 * (n ** 2) - ((n + 1 / n) ** 2) * (sin(theta)) ** 2 + 4 * cos(theta) * sqrt(
+            n ** 2 - (sin(theta)) ** 2)) - rho)
+    try:
+        Theta=bisect(f_rho,0,abs(minimize_scalar(nf_rho).x))
+    except:
+        Theta=-2
+    return Theta
 
 
 
@@ -37,40 +52,16 @@ def main():
 
     maxrho=0
 
-
+    Phi=np.zeros((height,width))
+    Theta = np.zeros((height, width))
 
     for x in range(height):
         for y in range(width):
-            Imax, Imin, Phi = solvingsystem.solve_system([img0.item((x, y)), img45.item((x, y)), img90.item((x, y))])
-
+            Imax, Imin, Phi[x,y] = solvingsystem.solve_system([img0.item((x, y)), img45.item((x, y)), img90.item((x, y))])
             Rho = (Imax - Imin) / (Imax + Imin)
-
-
-
-
-            aa = (n - 1 / n)** 2 + Rho * (n + 1/ n) **2
-            bb = 4 * Rho * (n ** 2 + 1) * (aa - 4 * Rho)
-            cc = bb ** 2 + 16 * (Rho) ** 2 * (16 * (Rho) ** 2 - aa **2) * (n **2 - 1) **2
-            dd = ((-bb - cc **(1 / 2)) / (2 * (16 * (Rho) **2 - aa **2))) **(1 / 2)
-            try:
-                theta = asin(dd)
-
-            except:
-                cmap[x,y]=255
-                theta=0
-
-            while(theta<0.0):
-                theta += 2*pi
-                print("lol")
-
-            while(theta>2.):
-                theta-=2*pi
-            print("theta=",theta)
-
-            theta/=2
-
-
-            map[x, y] = abs(floor(255 * theta))
+            Theta[x,y]=findtheta(Rho,n,Imax,Imin,img0.item((x, y)), img45.item((x, y)), img90.item((x, y)))
+            Theta[x,y]/=2
+            map[x, y] = abs(floor(255 * Theta[x,y]))
 
 
     map = np.asarray(map)
@@ -78,5 +69,12 @@ def main():
     cv2.imwrite("./maps/thetamap.png", map)
     cv2.imwrite("./maps/cmap.png",cmap)
 
+    plt.imshow(Theta,cmap='viridis')
+    plt.colorbar(ticks=[Theta.min(),0,Theta.max()])
+    plt.show()
+
+    plt.imshow(Phi,cmap="RdBu")
+    plt.colorbar(ticks=[Phi.min(), 0, Phi.max()])
+    plt.show()
 if __name__ == "__main__":
     main()
